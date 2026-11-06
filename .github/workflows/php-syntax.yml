@@ -1,0 +1,28 @@
+name: Sintaxe PHP
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: ctype, dom, fileinfo, gd, iconv, libxml, mbstring, simplexml, xml, xmlreader, xmlwriter, zip, zlib
+          tools: composer:v2
+      - name: Instalar bibliotecas do lockfile sem acessar banco
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Conferir requisitos de plataforma das bibliotecas
+        run: composer check-platform-reqs
+      - name: Conferir sintaxe sem executar páginas ou conectar banco
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+          done < <(find . -type f -name '*.php' -not -path './vendor/*' -print0)
